@@ -23,6 +23,7 @@ public final class Archaius1Utils {
     public static DynamicPropertyFactory initConfig(String configName) {
 
         DynamicPropertyFactory configInstance = DynamicPropertyFactory.getInstance();
+        // 获取 eureka client 的配置文件
         DynamicStringProperty EUREKA_PROPS_FILE = configInstance.getStringProperty("eureka.client.props", configName);
 
         String env = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT, "test");

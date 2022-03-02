@@ -66,6 +66,8 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
         logger.info("Initializing ...");
         peerEurekaNodes.start();
         try {
+            // 基于 eureka server 集群的信息来初始化注册表
+            // 将集群中所有的注册表抓取过来放到自己本地的注册表中
             registry.init(peerEurekaNodes);
         } catch (Exception e) {
             throw new RuntimeException(e);

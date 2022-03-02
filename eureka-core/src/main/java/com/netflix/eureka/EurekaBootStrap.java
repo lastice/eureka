@@ -52,11 +52,11 @@ import org.slf4j.LoggerFactory;
 /**
  * The class that kick starts the eureka server.
  *
- * <p>
  * 两个需要注意的点
  * eureka server 对应的配置类为：EurekaServerConfig
  * eureka client 对应的配置类为：EurekaInstanceConfig
  *
+ * <p>
  * The eureka server is configured by using the configuration
  * {@link EurekaServerConfig} specified by <em>eureka.server.props</em> in the
  * classpath.  The eureka client component is also initialized by using the
@@ -186,7 +186,8 @@ public class EurekaBootStrap implements ServletContextListener {
             
             applicationInfoManager = new ApplicationInfoManager(
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
-            
+
+            // DefaultEurekaClientConfig 类似于上面的 DefaultEurekaServerConfig 的实现
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
             eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
         } else {
@@ -194,6 +195,8 @@ public class EurekaBootStrap implements ServletContextListener {
         }
 
         // 处理注册相关
+        // 可以感知 eureka server 集群的服务实例注册表，eureka client（作为服务实例）注册到注册表中
+        // 如果 eureka server 集群存在，注册表中还包含了其他 eureka server 中的服务实例注册表信息
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
             registry = new AwsInstanceRegistry(
@@ -205,6 +208,7 @@ public class EurekaBootStrap implements ServletContextListener {
             awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
             awsBinder.start();
         } else {
+            // 创建 PeerAwareInstanceRegistry，最近取消的实例和注册的实例都会保存到 registry 中
             registry = new PeerAwareInstanceRegistryImpl(
                     eurekaServerConfig,
                     eurekaClient.getEurekaClientConfig(),
@@ -214,6 +218,7 @@ public class EurekaBootStrap implements ServletContextListener {
         }
 
         // 处理 peer 节点相关
+        // PeerEurekaNodes 代表 eureka server 集群
         PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
                 registry,
                 eurekaServerConfig,
@@ -231,18 +236,21 @@ public class EurekaBootStrap implements ServletContextListener {
                 applicationInfoManager
         );
 
+        // 将上下文信息放入 holder
         EurekaServerContextHolder.initialize(serverContext);
 
+        // 启动 eureka server 集群，里面会更新集群的信息，让当前 eureka server 感知到所有其他的 eureka server
+        // 然后启动定时调度任务，每隔一段时间更新 eureka server 集群的信息
         serverContext.initialize();
         logger.info("Initialized server context");
 
         // Copy registry from neighboring eureka node
-        // 处理后续事情，从相邻 eureka 节点拷贝注册信息
+        // 处理后续事情，从相邻 eureka 节点拷贝注册信息，如果拷贝失败就找下一个
         int registryCount = registry.syncUp();
         registry.openForTraffic(applicationInfoManager, registryCount);
 
         // Register all monitoring statistics.
-        // 注册所有检测统计项
+        // 注册所有监控统计项
         EurekaMonitors.registerAllStats();
     }
     
