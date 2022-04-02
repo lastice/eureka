@@ -118,6 +118,10 @@ public class ExampleEurekaClient {
         ExampleEurekaClient sampleClient = new ExampleEurekaClient();
 
         // create the client
+        // MyDataCenterInstanceConfig 加载 eureka-client.properties 配置信息，形成一个服务实例的配置 EurekaInstanceConfig
+        // 基于 EurekaClient 配置，构造服务实例 InstanceInfo
+        // 基于 EurekaClient 配置和服务实例管理器，构造 EurekaClient（DiscoveryClient）
+        // 保存相关配置，处理服务注册和注册表抓取，启动相关线程池，启动网络通信组件，启动调度任务，注册监控项
         ApplicationInfoManager applicationInfoManager = initializeApplicationInfoManager(new MyDataCenterInstanceConfig());
         EurekaClient client = initializeEurekaClient(applicationInfoManager, new DefaultEurekaClientConfig());
 

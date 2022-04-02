@@ -335,6 +335,7 @@ public class DiscoveryClient implements EurekaClient {
         }
         
         this.applicationInfoManager = applicationInfoManager;
+        // 创建配置实例，包含 eureka 的各种信息
         InstanceInfo myInfo = applicationInfoManager.getInfo();
 
         clientConfig = config;
@@ -563,6 +564,7 @@ public class DiscoveryClient implements EurekaClient {
                 endpointRandomizer
         );
 
+        // 如果需要抓取注册表，读取其他 server 的注册信息
         if (clientConfig.shouldRegisterWithEureka()) {
             EurekaHttpClientFactory newRegistrationClientFactory = null;
             EurekaHttpClient newRegistrationClient = null;
@@ -577,6 +579,7 @@ public class DiscoveryClient implements EurekaClient {
                 logger.warn("Transport initialization failure", e);
             }
             eurekaTransport.registrationClientFactory = newRegistrationClientFactory;
+            // 将 newRegistrationClient 放入 eurekaTransport 中
             eurekaTransport.registrationClient = newRegistrationClient;
         }
 
@@ -1377,7 +1380,7 @@ public class DiscoveryClient implements EurekaClient {
                 applicationInfoManager.registerStatusChangeListener(statusChangeListener);
             }
 
-            // 执行线程
+            // 执行线程 默认40s
             instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
         } else {
             logger.info("Not registering with Eureka server per configuration");

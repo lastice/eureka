@@ -24,6 +24,13 @@ import java.util.concurrent.atomic.AtomicReference;
  *   on-demand update).
  *
  *   @author dliu
+ *
+ * 用于将本地的 instanceInfo 更新和复制到远程服务器的任务：
+ * - 配置单个更新线程以保证对远程服务器的顺序更新
+ * - 可以通过 onDemandUpdate() 按需调度更细任务
+ * - 任务处理的速率受 burstSize 限制
+ * - 新更新总是在较早的更新任务之后自动计划任务，但如果启动了按需任务，则计划的自动更新任务将被丢弃（并且将在新的按需更新之后安排新的任务）
+ *
  */
 class InstanceInfoReplicator implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
@@ -63,6 +70,7 @@ class InstanceInfoReplicator implements Runnable {
     public void start(int initialDelayMs) {
         if (started.compareAndSet(false, true)) {
             instanceInfo.setIsDirty();  // for initial register
+            // 将 this 线程放入到 scheduler 调度任务线程池中，然后在指定时间后执行该线程 run 方法
             Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
             scheduledPeriodicRef.set(next);
         }
@@ -114,6 +122,7 @@ class InstanceInfoReplicator implements Runnable {
 
     public void run() {
         try {
+            // 刷新服务实例信息
             discoveryClient.refreshInstanceInfo();
 
             Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
